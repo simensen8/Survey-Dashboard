@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parker Compass — Intake Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --poppy: #C94A2B; --poppy-hover: #A83A1F;
+    --poppy-light: #FDF1EE; --poppy-border: #E8C0B0; --poppy-dark: #7A2A14;
+    --text-primary: #1A1A1A; --text-secondary: #6B6B6B; --text-hint: #9A9A9A;
+    --bg: #F7F5F2; --surface: #FFFFFF; --border: #E2DFDA; --border-strong: #C8C4BE;
+    --green: #059669; --green-light: #ECFDF5;
+    --radius-md: 10px; --radius-lg: 14px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); line-height: 1.6; min-height: 100vh; }
+
+  /* Header */
+  .page-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 0; box-shadow: var(--shadow-sm); }
+  .header-inner { max-width: 960px; margin: 0 auto; padding: 0 28px; display: flex; align-items: center; gap: 14px; }
+  .logo-mark { width: 38px; height: 38px; background: var(--poppy); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo-mark svg { width: 20px; height: 20px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .header-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 500; }
+  .header-sub { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+  .header-right { margin-left: auto; }
+  .file-badge { font-size: 12px; color: var(--green); background: var(--green-light); padding: 4px 12px; border-radius: 20px; font-weight: 500; display: none; }
+
+  /* Tab nav */
+  .tab-nav { background: var(--surface); border-bottom: 1px solid var(--border); }
+  .tab-nav-inner { max-width: 960px; margin: 0 auto; padding: 0 28px; display: flex; }
+  .tab-btn { padding: 12px 20px; font-size: 13.5px; font-family: 'DM Sans', sans-serif; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
+  .tab-btn.on { color: var(--poppy); border-bottom-color: var(--poppy); font-weight: 500; }
+  .tab-btn:hover:not(.on) { color: var(--text-primary); }
+
+  /* Main */
+  .main { max-width: 960px; margin: 0 auto; padding: 28px 28px 80px; }
+  .view { display: none; } .view.on { display: block; }
+
+  /* Upload screen */
+  .upload-screen { max-width: 520px; margin: 60px auto; text-align: center; }
+  .upload-icon { width: 64px; height: 64px; background: var(--poppy-light); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
+  .upload-icon svg { width: 30px; height: 30px; stroke: var(--poppy); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .upload-title { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 10px; }
+  .upload-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 28px; }
+  .upload-steps { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 24px; margin-bottom: 24px; text-align: left; }
+  .upload-step { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; font-size: 13.5px; color: var(--text-primary); line-height: 1.5; }
+  .upload-step:last-child { margin-bottom: 0; }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--poppy); color: white; font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .drop-zone { border: 2px dashed var(--poppy-border); border-radius: var(--radius-lg); padding: 32px; background: var(--poppy-light); cursor: pointer; transition: all .2s; position: relative; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--poppy); background: #FAE8E3; }
+  .drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .drop-zone p { font-size: 14px; color: var(--poppy-dark); font-weight: 500; margin-bottom: 4px; }
+  .drop-zone span { font-size: 12px; color: var(--text-hint); }
+  .drop-zone svg { width: 28px; height: 28px; stroke: var(--poppy); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 10px; }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; box-shadow: var(--shadow-sm); }
+  .stat-card.accent { border-color: var(--poppy-border); background: var(--poppy-light); }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .stat-value { font-family: 'Playfair Display', serif; font-size: 28px; line-height: 1; color: var(--text-primary); }
+  .stat-card.accent .stat-value { color: var(--poppy-dark); }
+  .stat-sub { font-size: 11.5px; color: var(--text-hint); margin-top: 5px; }
+
+  /* Charts */
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 24px; box-shadow: var(--shadow-sm); }
+  .chart-title { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); margin-bottom: 16px; }
+  .bar-row { display: flex; flex-direction: column; gap: 9px; }
+  .bar-item { display: flex; align-items: center; gap: 10px; }
+  .bar-label { width: 180px; font-size: 12.5px; color: var(--text-secondary); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; height: 20px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--poppy); border-radius: 4px; transition: width .5s ease; }
+  .bar-count { width: 20px; text-align: right; font-size: 12px; color: var(--text-hint); }
+
+  /* Ratings */
+  .rating-row { display: flex; flex-direction: column; gap: 14px; }
+  .rating-item { display: flex; align-items: center; gap: 12px; }
+  .rating-label { flex: 1; font-size: 13px; color: var(--text-secondary); }
+  .rating-pips { display: flex; gap: 5px; }
+  .pip { width: 13px; height: 13px; border-radius: 50%; background: var(--border); }
+  .pip.on { background: var(--poppy); }
+  .rating-val { font-size: 13px; font-weight: 500; width: 30px; text-align: right; }
+
+  /* Response cards */
+  .resp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .resp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; box-shadow: var(--shadow-sm); }
+  .rc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .rc-name { font-weight: 500; font-size: 15px; }
+  .rc-date { font-size: 11.5px; color: var(--text-hint); }
+  .rc-tag { display: inline-block; background: var(--poppy-light); color: var(--poppy-dark); font-size: 11px; padding: 3px 10px; border-radius: 5px; font-weight: 500; margin-bottom: 14px; }
+  .rc-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-bottom: 12px; }
+  .rc-field { font-size: 12px; color: var(--text-hint); }
+  .rc-field span { display: block; color: var(--text-primary); font-size: 13px; margin-top: 1px; line-height: 1.4; }
+  .expand-btn { background: none; border: none; font-size: 12px; color: var(--poppy); cursor: pointer; padding: 0; font-family: 'DM Sans', sans-serif; }
+  .rc-detail { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .rc-detail.open { display: block; }
+  .rc-detail-item { margin-bottom: 10px; }
+  .rc-detail-lbl { font-size: 11px; color: var(--text-hint); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
+  .rc-detail-val { font-size: 13px; color: var(--text-primary); line-height: 1.6; }
+
+  /* AI */
+  .ai-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow-sm); }
+  .ai-intro { font-size: 13.5px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px; }
+  .ai-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+  .ai-btn { background: var(--poppy); color: white; border: none; padding: 10px 22px; border-radius: var(--radius-md); font-size: 13.5px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; transition: background .15s; }
+  .ai-btn:hover { background: var(--poppy-hover); }
+  .ai-btn:disabled { opacity: .55; cursor: default; }
+  .ai-btn-sec { background: transparent; border: 1px solid var(--border-strong); color: var(--text-primary); padding: 10px 22px; border-radius: var(--radius-md); font-size: 13.5px; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .15s; }
+  .ai-btn-sec:hover { border-color: var(--poppy); color: var(--poppy); }
+  .ai-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 20px; }
+  .ai-output { font-size: 14px; color: var(--text-primary); line-height: 1.85; white-space: pre-wrap; min-height: 40px; }
+  .ai-output.muted { color: var(--text-hint); font-style: italic; }
+  .ai-status { font-size: 12px; color: var(--text-hint); margin-top: 14px; }
+
+  .empty { text-align: center; padding: 32px; color: var(--text-hint); font-size: 13.5px; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; margin-right: 7px; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 640px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .charts-grid, .resp-grid { grid-template-columns: 1fr; }
+    .main, .header-inner, .tab-nav-inner { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div class="header-inner">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><polyline points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+    </div>
+    <div>
+      <div class="header-title">Parker Compass — Admin Dashboard</div>
+      <div class="header-sub">HCBS Intake Discovery · Phase I</div>
+    </div>
+    <div class="header-right">
+      <div class="file-badge" id="file-badge">✓ Data loaded</div>
+    </div>
+  </div>
+</header>
+
+<div class="tab-nav">
+  <div class="tab-nav-inner">
+    <button class="tab-btn on" onclick="switchTab('overview', this)">Overview</button>
+    <button class="tab-btn" onclick="switchTab('responses', this)">Responses</button>
+    <button class="tab-btn" onclick="switchTab('analysis', this)">AI Analysis</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Upload prompt (shown when no data) -->
+  <div id="upload-prompt">
+    <div class="upload-screen">
+      <div class="upload-icon">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      </div>
+      <div class="upload-title">Load your survey responses</div>
+      <p class="upload-desc">Export your Google Sheet as a CSV file, then drop it below. Everything runs locally — no internet required after upload.</p>
+      <div class="upload-steps">
+        <div class="upload-step"><div class="step-num">1</div><div>Open your <strong>Parker Compass Survey Responses</strong> Google Sheet</div></div>
+        <div class="upload-step"><div class="step-num">2</div><div>Click <strong>File → Download → Comma Separated Values (.csv)</strong></div></div>
+        <div class="upload-step"><div class="step-num">3</div><div>Drag the downloaded CSV file into the box below</div></div>
+      </div>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" accept=".csv" id="csv-input" onchange="handleFile(this.files[0])">
+        <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        <p>Drop your CSV file here</p>
+        <span>or click to browse for the file</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard views (hidden until data loaded) -->
+  <div id="dashboard" style="display:none">
+
+    <!-- OVERVIEW -->
+    <div id="tab-overview" class="view on">
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-title">Referral receipt methods</div><div class="bar-row" id="chart-receipt"></div></div>
+        <div class="chart-card"><div class="chart-title">Problem stages</div><div class="bar-row" id="chart-problems"></div></div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-title">Most valued hub features</div><div class="bar-row" id="chart-hub"></div></div>
+        <div class="chart-card"><div class="chart-title">Average ratings</div><div class="rating-row" id="chart-ratings"></div></div>
+      </div>
+      <div class="chart-card"><div class="chart-title">Typical intake speed</div><div class="bar-row" id="chart-speed"></div></div>
+    </div>
+
+    <!-- RESPONSES -->
+    <div id="tab-responses" class="view">
+      <div class="resp-grid" id="resp-grid"></div>
+    </div>
+
+    <!-- AI ANALYSIS -->
+    <div id="tab-analysis" class="view">
+      <div class="ai-card">
+        <p class="ai-intro">Choose an analysis type below. Claude will read all submitted responses and generate a tailored executive summary — patterns, gaps, and recommendations for the Parker Compass intake model.</p>
+        <div class="ai-btns">
+          <button class="ai-btn" id="ai-btn-full" onclick="analyze('full')">Full synthesis</button>
+          <button class="ai-btn-sec" onclick="analyze('gaps')">Gap analysis</button>
+          <button class="ai-btn-sec" onclick="analyze('recommendations')">Recommendations only</button>
+        </div>
+        <hr class="ai-divider">
+        <div class="ai-output muted" id="ai-output">Your analysis will appear here.</div>
+        <div class="ai-status" id="ai-status"></div>
+      </div>
+    </div>
+
+  </div><!-- #dashboard -->
+</div>
+
+<script>
+let allData = [];
+
+// ── Drag and drop ──────────────────────────────────────────────────────
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.csv')) handleFile(file);
+  else alert('Please drop a CSV file.');
+});
+
+// ── Parse CSV ──────────────────────────────────────────────────────────
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseCSV(e.target.result);
+    if (rows.length < 2) { alert('The CSV appears to be empty or has no responses.'); return; }
+    const headers = rows[0];
+    allData = rows.slice(1).filter(r => r.some(c => c.trim())).map(row => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h.trim()] = (row[i] || '').trim(); });
+      return obj;
+    });
+    document.getElementById('upload-prompt').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('file-badge').style.display = 'block';
+    renderOverview();
+    renderResponses();
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cell = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i], next = text[i+1];
+    if (inQ) {
+      if (ch === '"' && next === '"') { cell += '"'; i++; }
+      else if (ch === '"') inQ = false;
+      else cell += ch;
+    } else {
+      if (ch === '"') inQ = true;
+      else if (ch === ',') { row.push(cell); cell = ''; }
+      else if (ch === '\n' || (ch === '\r' && next === '\n')) {
+        row.push(cell); cell = '';
+        if (row.some(c => c)) rows.push(row);
+        row = [];
+        if (ch === '\r') i++;
+      } else cell += ch;
+    }
+  }
+  if (cell || row.length) { row.push(cell); if (row.some(c => c)) rows.push(row); }
+  return rows;
+}
+
+// ── Overview ───────────────────────────────────────────────────────────
+function renderOverview() {
+  const n = allData.length;
+  const avg = field => {
+    const vals = allData.map(r => parseFloat(r[field])).filter(v => !isNaN(v) && v > 0);
+    return vals.length ? (vals.reduce((a,b) => a+b,0)/vals.length).toFixed(1) : '—';
+  };
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card accent">
+      <div class="stat-label">Responses received</div>
+      <div class="stat-value">${n}</div>
+      <div class="stat-sub">of 5 directors · ${Math.round((n/5)*100)}% complete</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg tech support</div>
+      <div class="stat-value">${avg('Tech Support Rating')}</div>
+      <div class="stat-sub">out of 5</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg person-centered</div>
+      <div class="stat-value">${avg('Person-Centered Rating')}</div>
+      <div class="stat-sub">out of 5</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg process maturity</div>
+      <div class="stat-value">${avg('Process Maturity Rating')}</div>
+      <div class="stat-sub">out of 5</div>
+    </div>`;
+
+  renderBars('chart-receipt', flatMulti('Receipt Methods'), 7);
+  renderBars('chart-problems', flatMulti('Problem Stages'), 7);
+  renderBars('chart-hub', flatMulti('Hub Feature Priorities'), 6);
+  renderBars('chart-speed', allData.map(r => r['Typical Speed']).filter(Boolean), 7);
+
+  const ratings = [
+    { label: 'Tech support', val: avg('Tech Support Rating') },
+    { label: 'Person-centered', val: avg('Person-Centered Rating') },
+    { label: 'Process maturity', val: avg('Process Maturity Rating') },
+  ];
+  document.getElementById('chart-ratings').innerHTML = ratings.map(r => {
+    const n = parseFloat(r.val);
+    const pips = [1,2,3,4,5].map(i => `<div class="pip ${i <= Math.round(n) ? 'on' : ''}"></div>`).join('');
+    return `<div class="rating-item"><div class="rating-label">${r.label}</div><div class="rating-pips">${pips}</div><div class="rating-val">${r.val}</div></div>`;
+  }).join('');
+}
+
+function flatMulti(field) {
+  return allData.flatMap(r => (r[field]||'').split(';').map(v=>v.trim()).filter(Boolean));
+}
+
+function renderBars(id, vals, max) {
+  const el = document.getElementById(id);
+  if (!vals.length) { el.innerHTML = '<div class="empty">No data.</div>'; return; }
+  const counts = {};
+  vals.forEach(v => { if(v) counts[v] = (counts[v]||0)+1; });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,max);
+  const mx = Math.max(...sorted.map(s=>s[1]));
+  el.innerHTML = sorted.map(([label,count]) => `
+    <div class="bar-item">
+      <div class="bar-label" title="${label}">${label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round((count/mx)*100)}%"></div></div>
+      <div class="bar-count">${count}</div>
+    </div>`).join('');
+}
+
+// ── Responses ──────────────────────────────────────────────────────────
+function renderResponses() {
+  const grid = document.getElementById('resp-grid');
+  if (!allData.length) { grid.innerHTML = '<div class="empty">No responses yet.</div>'; return; }
+  grid.innerHTML = allData.slice().reverse().map((r, i) => {
+    const idx = allData.length - 1 - i;
+    const ts = r['Timestamp'] ? new Date(r['Timestamp']).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    return `<div class="resp-card">
+      <div class="rc-top"><div class="rc-name">${r['Name']||'Unknown'}</div><div class="rc-date">${ts}</div></div>
+      <div class="rc-tag">${r['Service Line']||'—'}</div>
+      <div class="rc-fields">
+        <div class="rc-field">Monthly volume<span>${r['Monthly Referral Volume']||'—'}</span></div>
+        <div class="rc-field">Staff in intake<span>${r['Staff in Intake']||'—'}</span></div>
+        <div class="rc-field">Typical speed<span>${r['Typical Speed']||'—'}</span></div>
+        <div class="rc-field">First receiver<span>${r['First Receiver']||'—'}</span></div>
+        <div class="rc-field">Tech rating<span>${r['Tech Support Rating'] ? r['Tech Support Rating']+' / 5' : '—'}</span></div>
+        <div class="rc-field">Person-centered<span>${r['Person-Centered Rating'] ? r['Person-Centered Rating']+' / 5' : '—'}</span></div>
+      </div>
+      <button class="expand-btn" onclick="toggleDetail(${idx}, this)">Show full response ↓</button>
+      <div class="rc-detail" id="det-${idx}">
+        ${df('Intake start', r['Intake Start'])}
+        ${df('Intake end', r['Intake End'])}
+        ${df('Receipt methods', r['Receipt Methods'])}
+        ${df('Systems used', r['Systems Used'])}
+        ${df('Primary system', r['Primary System'])}
+        ${df('Intake steps', r['Intake Steps'])}
+        ${df('Non-tech breakdown', r['Non-Tech Breakdown'])}
+        ${df('Problem stages', r['Problem Stages'])}
+        ${df('Incomplete referral frequency', r['Incomplete Referral Frequency'])}
+        ${df('Workarounds', r['Workarounds'])}
+        ${df('Top fix', r['Top Fix'])}
+        ${df('First contact speed', r['First Contact Speed'])}
+        ${df('Goals gathered', r['Goals Gathered'])}
+        ${df('Participant view', r['Participant View'])}
+        ${df('Process maturity', r['Process Maturity Rating'] ? r['Process Maturity Rating']+' / 5' : '')}
+        ${df('Hub priorities', r['Hub Feature Priorities'])}
+        ${df('Excellence definition', r['Excellence Definition'])}
+        ${r['Additional Notes'] ? df('Additional notes', r['Additional Notes']) : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function df(label, val) {
+  if (!val || !val.trim()) return '';
+  return `<div class="rc-detail-item"><div class="rc-detail-lbl">${label}</div><div class="rc-detail-val">${val.replace(/;/g,' · ')}</div></div>`;
+}
+
+function toggleDetail(idx, btn) {
+  const el = document.getElementById('det-' + idx);
+  el.classList.toggle('open');
+  btn.textContent = el.classList.contains('open') ? 'Hide full response ↑' : 'Show full response ↓';
+}
+
+// ── AI Analysis ────────────────────────────────────────────────────────
+async function analyze(mode) {
+  if (!allData.length) { document.getElementById('ai-output').textContent = 'No data loaded yet.'; return; }
+
+  const prompts = {
+    full: `You are an HCBS operations analyst supporting Parker Senior Care Options, a New Jersey nonprofit. Below is intake discovery survey data from service line directors as part of the Parker Compass strategic initiative. Write a concise executive analysis in plain prose (no markdown headers or bullets) covering: (1) patterns in how intake begins, ends, and flows across service lines, (2) technology gaps and what workarounds reveal about unmet needs, (3) person-centeredness strengths and gaps, (4) cross-service coordination risks, and (5) three to four specific recommendations for the Parker Compass centralized intake hub. Be direct — this is for a Regional Director who wants actionable insight.`,
+    gaps: `You are an HCBS operations analyst. Analyze this intake discovery data from Parker Senior Care Options directors and identify the most critical operational gaps — technology, process, coordination, and participant experience. Be specific about which service lines have which gaps. Write in plain prose, no markdown.`,
+    recommendations: `You are an HCBS operations analyst. Based on this intake discovery data from Parker Senior Care Options, provide 5 concrete, prioritized recommendations for the Parker Compass centralized intake hub. Each recommendation should be specific, actionable, and tied directly to evidence in the survey data. Write in plain prose, no markdown.`
+  };
+
+  const btn = document.getElementById('ai-btn-full');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Analyzing...';
+  document.getElementById('ai-output').className = 'ai-output muted';
+  document.getElementById('ai-output').textContent = 'Generating analysis from ' + allData.length + ' response(s)...';
+  document.getElementById('ai-status').textContent = '';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: prompts[mode] + '\n\nSurvey data:\n' + JSON.stringify(allData, null, 2) }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || 'Analysis could not be generated.';
+    document.getElementById('ai-output').textContent = text;
+    document.getElementById('ai-output').className = 'ai-output';
+    document.getElementById('ai-status').textContent = 'Generated ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  } catch(e) {
+    document.getElementById('ai-output').textContent = 'Analysis failed — please check your internet connection and try again.';
+    document.getElementById('ai-output').className = 'ai-output';
+  }
+  btn.disabled = false;
+  btn.innerHTML = 'Full synthesis';
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('tab-' + name).classList.add('on');
+  btn.classList.add('on');
+}
+</script>
+</body>
+</html>
